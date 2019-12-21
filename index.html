@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Game Engine</title>
+</head>
+
+<body>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        .hidden {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0;
+        }
+    </style>
+    <img id="bluesquare" src="BlueSquare.png" class="hidden">
+    <img id="redsquare" src="RedSquare.png" class="hidden">
+    <canvas id="game-canvas" width="800" height="600"></canvas>
+
+
+    <script src="engine.js"></script>
+    <script>
+        window.addEventListener("load", () => {
+            let canvas = $("#game-canvas");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            var engine = new Engine($("#game-canvas"));
+            let bluesquare = new Object($("#bluesquare"));
+            let redsquare = new Object($("#redsquare"));
+
+
+
+            bluesquare.Start = function() {
+                this.drag.x = .1;
+                this.jumping = false;
+                this.gravity = 9.8;
+                this.jumpMult = 1;
+            }
+
+            bluesquare.Update = function () {
+                bluesquare.acceleration.y = this.gravity * this.jumpMult * 100;
+                let onGround = this.collidesAt({
+                    x: this.position.x,
+                    y: this.position.y + 1
+                });
+                if (onGround) {
+                    bluesquare.acceleration.y = Math.min(0, bluesquare.acceleration.y);
+                }
+
+                let move = Input.key("d") - Input.key("a");
+
+                this.velocity.x += 100 * move;
+
+                if(this.jumping && onGround) {
+                    this.jumping = false;
+                }
+
+                if (Input.keyDown(" ") && onGround) {
+                    this.jumping = true;
+                    this.velocity.y = -350;
+                }
+
+                if(this.jumping && Input.key(" ") && this.velocity.y < 0) {
+                    this.jumpMult = 1/3;
+                }
+                else {
+                    this.jumpMult = 1;
+                }
+            }
+
+            redsquare.position = {
+                x: 0,
+                y: 500
+            };
+            redsquare.scale = {
+                x: 25,
+                y: 10
+            }
+            engine.instantiate(bluesquare);
+            engine.instantiate(redsquare);
+        })
+    </script>
+</body>
+
+</html>
