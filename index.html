@@ -20,78 +20,147 @@
         }
 
         .hidden {
+            top: 0;
+            left: 0;
             position: fixed;
             pointer-events: none;
             opacity: 0;
         }
     </style>
-    <img id="bluesquare" src="BlueSquare.png" class="hidden">
-    <img id="redsquare" src="RedSquare.png" class="hidden">
     <canvas id="game-canvas" width="800" height="600"></canvas>
 
 
     <script src="engine.js"></script>
     <script>
-        window.addEventListener("load", () => {
-            let canvas = $("#game-canvas");
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        let canvas = $("#game-canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-            var engine = new Engine($("#game-canvas"));
-            let bluesquare = new Object($("#bluesquare"));
-            let redsquare = new Object($("#redsquare"));
+        var engine = new Engine($("#game-canvas"));
+        let santa = new Object(new SpriteSheet("sprites/SantaWalkBackward.png", 4));
+        santa.sprite.speed = 10;
+        let redsquare = new Object(new SpriteSheet("sprites/House.png", 1));
 
 
 
-            bluesquare.Start = function() {
-                this.drag.x = .1;
-                this.jumping = false;
-                this.gravity = 9.8;
-                this.jumpMult = 1;
-            }
 
-            bluesquare.Update = function () {
-                bluesquare.acceleration.y = this.gravity * this.jumpMult * 100;
-                let onGround = this.collidesAt({
-                    x: this.position.x,
-                    y: this.position.y + 1
-                });
-                if (onGround) {
-                    bluesquare.acceleration.y = Math.min(0, bluesquare.acceleration.y);
-                }
+        santa.scale = {
+            x: 2,
+            y: 2
+        };
 
-                let move = Input.key("d") - Input.key("a");
+        santa.collider = {
+            x: 9,
+            y: 5,
+            width: 16,
+            height: 40
+        }
 
-                this.velocity.x += 100 * move;
-
-                if(this.jumping && onGround) {
-                    this.jumping = false;
-                }
-
-                if (Input.keyDown(" ") && onGround) {
-                    this.jumping = true;
-                    this.velocity.y = -350;
-                }
-
-                if(this.jumping && Input.key(" ") && this.velocity.y < 0) {
-                    this.jumpMult = 1/3;
-                }
-                else {
-                    this.jumpMult = 1;
-                }
-            }
-
-            redsquare.position = {
-                x: 0,
-                y: 500
+        santa.Start = function () {
+            this.drag = {
+                x: .2,
+                y: .2
             };
-            redsquare.scale = {
-                x: 25,
-                y: 10
+            this.onGround = true;
+
+            this.spriteWalkForward = new SpriteSheet("sprites/SantaWalkForward.png", 4);
+            this.spriteWalkBackward = new SpriteSheet("sprites/SantaWalkBackward.png", 4);
+            this.spriteWalkLeft = new SpriteSheet("sprites/SantaWalkLeft.png", 4);
+            this.spriteWalkRight = new SpriteSheet("sprites/SantaWalkRight.png", 4);
+
+            this.sprite.speed = 0;
+
+            this.friction = {
+                x: 0.3,
+                y: 0.3
             }
-            engine.instantiate(bluesquare);
-            engine.instantiate(redsquare);
-        })
+        }
+
+        santa.Update = function () {
+            let moveX = Input.key("d") - Input.key("a");
+            let moveY = Input.key("s") - Input.key("w");
+
+            this.velocity.x += 100 * moveX;
+            this.velocity.y += 100 * moveY;
+
+            if(moveX < 0) {
+                this.sprite = this.spriteWalkLeft;
+            }
+            if(moveX > 0) {
+                this.sprite = this.spriteWalkRight;
+            }
+            if(moveY < 0) {
+                this.sprite = this.spriteWalkForward;
+            }
+            if(moveY > 0) {
+                this.sprite = this.spriteWalkBackward;
+            }
+
+            if(moveX == 0 && moveY == 0) {
+                this.sprite.speed = 0;
+                this.sprite.setIndex(1);
+            }
+            else {
+                this.sprite.speed = 10;
+            }
+
+            this.depth = this.getCenterOffset().y;
+        }
+
+        redsquare.position = {
+            x: 200,
+            y: 200
+        };
+        redsquare.scale = {
+            x: 2,
+            y: 2
+        }
+        redsquare.collider = {
+            x: 0,
+            y: 48,
+            width: 144,
+            height: 72
+        }
+
+        redsquare.Start = function() {
+            this.time = 0;
+            this.smokeSprite = new SpriteSheet("sprites/Smoke.png", 1);
+        }
+        redsquare.Update = function() {
+            this.depth = this.getCenterOffset().y;
+            this.time += 1 / 60;
+
+            if(this.time >= .5) {
+                let smoke = new Object(this.smokeSprite);
+                smoke.position = {x: this.position.x + 220, y: this.position.y - 20}
+                smoke.depth = 99999;
+                smoke.scale = {
+                    x: 1.3,
+                    y: 1.3
+                }
+
+                smoke.Start = function() {
+                    this.velocity.y = -100;
+                    this.acceleration.y = 20;
+                    this.acceleration.x = 1;
+                }
+
+                smoke.Update = function() {
+                    this.scale.x += 1/120;
+                    this.scale.y += 1/120;
+                    if(this.velocity.y > 0) {
+                        this.engine.destroy(this);
+                    }
+                }
+                
+                this.engine.instantiate(smoke);
+
+                this.time = 0;
+            }
+        }
+
+        engine.instantiate(santa);
+        engine.instantiate(redsquare);
     </script>
 </body>
 
